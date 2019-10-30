@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Proctorial System</string>
+    <string name="title_activity_login">Sign in</string>
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in">Sign in</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="invalid_username">Not a valid username</string>
+    <string name="invalid_password">Password must be >5 characters</string>
+    <string name="login_failed">"Login failed"</string>
+    <string name="welcome">"Welcome!"</string>
+
+    <string name="menu_dashboard">Dashboard</string>
+    <string name="menu_messaging">Messaging</string>
+    <string name="menu_report">Reports</string>
+    <string name="menu_updates">Updates</string>
+    <string name="menu_metrics">Metrics</string>
+
+</resources>
