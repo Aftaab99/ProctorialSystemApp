@@ -12,7 +12,7 @@ public class LoginDataSource {
     public Result<LoggedInUser> login(String username, String password) {
 
         try {
-            // TODO: handle loggedInUser authentication
+            // TO DO: Handle loggedInUser authentication
             LoggedInUser fakeUser =
                     new LoggedInUser(
                             java.util.UUID.randomUUID().toString(),
@@ -22,8 +22,9 @@ public class LoginDataSource {
             return new Result.Error(new IOException("Error logging in", e));
         }
     }
-
+    //Used to logout of the app 
     public void logout() {
         // TODO: revoke authentication
     }
 }
+ 
