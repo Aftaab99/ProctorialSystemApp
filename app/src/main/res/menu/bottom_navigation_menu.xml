@@ -3,16 +3,12 @@
     <item android:id="@+id/action_navigation_dashboard_"
         android:title="@string/menu_dashboard"
         android:icon="@drawable/ic_dashboard" />
-    <item android:id="@+id/action_navigation_messaging"
-        android:title="@string/menu_messaging"
-        android:icon="@drawable/ic_messaging" />
+
     <item android:id="@+id/action_navigation_report_generation"
         android:title="@string/menu_report"
         android:icon="@drawable/ic_report_generation" />
     <item android:id="@+id/action_navigation_updates"
         android:title="@string/menu_updates"
         android:icon="@drawable/ic_updates" />
-    <item android:id="@+id/action_navigation_metrics"
-        android:title="@string/menu_metrics"
-        android:icon="@drawable/ic_metrics" />
+
 </menu>

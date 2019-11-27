@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.proctorialsystem">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -9,17 +12,21 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity android:name=".components.Reports.ShowRemarkList"></activity>
+        <activity android:name=".components.Reports.NewProctorMeetActivity" />
+        <activity android:name=".components.Reports.ReportDetailsActivity" />
+        <activity android:name=".components.Dashboard.StudentDetails" />
         <activity
-            android:name=".ui.login.LoginActivity"
-            android:theme="@style/LoginTheme"
-            android:label="@string/title_activity_login"></activity>
-        <activity android:name=".MainActivity">
+            android:name=".login.ProctorLoginActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:theme="@style/LoginTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ProctorMainActivity" />
     </application>
 
 </manifest>

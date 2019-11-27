@@ -15,5 +15,9 @@
     <string name="menu_report">Reports</string>
     <string name="menu_updates">Updates</string>
     <string name="menu_metrics">Metrics</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+
+    <string name="title_activity_student_login">StudentLoginActivity</string>
 
 </resources>
