@@ -1,8 +1,10 @@
 package com.example.proctorialsystem.components.Dashboard;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -13,6 +15,7 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,7 +23,6 @@ import androidx.fragment.app.Fragment;
 
 import com.example.proctorialsystem.R;
 import com.example.proctorialsystem.Utility;
-import com.example.proctorialsystem.login.AutoLoginPreferences;
 import com.example.proctorialsystem.login.ProctorLoginActivity;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -29,17 +31,17 @@ import org.json.JSONObject;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
+import java.util.Objects;
 
 import javax.net.ssl.HttpsURLConnection;
 
 public class DashboardFragment extends Fragment {
 
-    String proctor_id, proctor_name;
+    private String proctor_id;
     public static List<Student> students = new ArrayList<>();
-    StudentLisViewAdapter adapter;
-    ProgressBar progressBar;
+    private StudentLisViewAdapter adapter;
+    private ProgressBar progressBar;
 
     @Nullable
     @Override
@@ -50,40 +52,47 @@ public class DashboardFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        System.out.println("Valid=" + Utility.isValidUSN("1DS17IS100"));
+
+        if (!PreferenceManager.getDefaultSharedPreferences(getActivity()).contains("JWT_TOKEN")) {
+            Intent gotoLogin = new Intent(getActivity(), ProctorLoginActivity.class);
+            startActivity(gotoLogin);
+        }
         proctor_id = getArguments().getString("proctor_id");
-        proctor_name = getArguments().getString("name");
+        String proctor_name = getArguments().getString("name");
+
         Button logout_btn = view.findViewById(R.id.logout);
         logout_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                AutoLoginPreferences.clearUserName(getActivity());
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.remove("JWT_TOKEN");
+                editor.apply();
+                editor.commit();
+
                 Intent intent = new Intent(getActivity(), ProctorLoginActivity.class);
                 startActivity(intent);
             }
         });
-        progressBar=view.findViewById(R.id.progressBar);
+        progressBar = view.findViewById(R.id.progressBar);
         ListView studentList = view.findViewById(R.id.student_list);
-        adapter = new StudentLisViewAdapter(getActivity()
-                , R.id.student_list, R.id.row_id_tv, students);
+        adapter = new StudentLisViewAdapter(Objects.requireNonNull(getActivity())
+                , R.id.student_list, R.id.row_id_tv, students, this);
         studentList.setAdapter(adapter);
-        System.out.println("Proc_id" + proctor_id);
         TextView welcomeET = view.findViewById(R.id.welcome_text);
         welcomeET.setText(String.format("Welcome, %s", proctor_name));
         final TextInputEditText addUSNET = view.findViewById(R.id.student_usn_tag);
         final Button addStudent = view.findViewById(R.id.add_student);
         FetchStudents fetchStudents = new FetchStudents();
-        String[] params = {proctor_id};
-        fetchStudents.execute(params);
+        fetchStudents.execute(proctor_id);
         addStudent.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String usn = addUSNET.getText().toString();
+                String usn = Objects.requireNonNull(addUSNET.getText()).toString();
                 System.out.println("USN=" + usn);
                 if (Utility.isValidUSN(usn)) {
                     AddStudentToGroup addStudentToGroup = new AddStudentToGroup();
-                    String[] params = {usn, proctor_id};
-                    addStudentToGroup.execute(params);
+                    addStudentToGroup.execute(usn, proctor_id);
                 } else {
                     addUSNET.setError("Invalid USN");
                 }
@@ -94,15 +103,14 @@ public class DashboardFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String usn = students.get(position).getUSN();
-                System.out.println("Clicked="+usn);
-                ShowStudentDetails showStudentDetails = new ShowStudentDetails();
-                String[] params = {usn};
-                showStudentDetails.execute(params);
+                System.out.println("Clicked=" + usn);
+
+                Intent gotoStudentDetails = new Intent(getActivity(), StudentDetails.class);
+                gotoStudentDetails.putExtra("usn", usn);
+                startActivity(gotoStudentDetails);
 
             }
         });
-
-
     }
 
     @Override
@@ -110,29 +118,35 @@ public class DashboardFragment extends Fragment {
         super.onCreateOptionsMenu(menu, inflater);
     }
 
-    public class AddStudentToGroup extends AsyncTask<String, Void, Void> {
+    private class AddStudentToGroup extends AsyncTask<String, Void, Void> {
 
-        @NonNull
-        Boolean errorOccured;
+        Boolean errorOccurred, sessionInvalidated;
+        String proctor_id;
+        String token;
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            errorOccured = true;
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            token = preferences.getString("JWT_TOKEN", "");
+            errorOccurred = false;
             progressBar.setVisibility(View.VISIBLE);
-
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             progressBar.setVisibility(View.INVISIBLE);
-
-            if (!errorOccured) {
-                students.clear();
-                FetchStudents fetchStudents = new FetchStudents();
-                String[] params = {proctor_id};
-                fetchStudents.execute(params);
+            if (!sessionInvalidated) {
+                if (!errorOccurred) {
+                    students.clear();
+                    FetchStudents fetchStudents = new FetchStudents();
+                    fetchStudents.execute(proctor_id);
+                } else
+                    Toast.makeText(getContext(), "Unable to add student. Student does not exist", Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(getContext(), "Session Invalidated, logging out.", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(getActivity(), ProctorLoginActivity.class));
             }
         }
 
@@ -141,85 +155,19 @@ public class DashboardFragment extends Fragment {
             try {
                 String usn = strings[0];
                 String proctor_id = strings[1];
+                String session_token = PreferenceManager.getDefaultSharedPreferences(getActivity()).getString("JWT_TOKEN", "");
                 URL url = new URL(String.format("https://proctorial-system.herokuapp.com/app/add_student_proctor?student_usn=%s&faculty_id=%s", usn, proctor_id));
                 HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+                conn.setRequestProperty("Authorization", session_token);
                 conn.setRequestMethod("GET");
                 conn.connect();
-
-                String res = Utility.fetchResponseHttps(conn);
-                JSONObject result = new JSONObject(res);
-                errorOccured = result.getBoolean("error");
-                System.out.println("Error=" + errorOccured);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-    }
-
-    public class ShowStudentDetails extends AsyncTask<String, Void, Void> {
-
-        String usn, name, dept, quota, email;
-        Integer join, grad, semester;
-        Long phone;
-
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            progressBar.setVisibility(View.VISIBLE);
-
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            progressBar.setVisibility(View.INVISIBLE);
-
-            Intent intent = new Intent(getActivity(), StudentDetails.class);
-            intent.putExtra("usn", usn);
-            intent.putExtra("name", name);
-            intent.putExtra("dept", dept);
-            intent.putExtra("quota", quota);
-            intent.putExtra("email", email);
-            intent.putExtra("join", join);
-            intent.putExtra("grad", grad);
-            intent.putExtra("semester", semester);
-            intent.putExtra("phone", phone);
-            startActivity(intent);
-
-
-        }
-
-        @Override
-        protected Void doInBackground(String... strings) {
-            try {
-                String usn1 = strings[0];
-                URL url = new URL(String.format("https://proctorial-system.herokuapp.com/app/get_student_details?student_usn=%s", usn1));
-                HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-
-                conn.connect();
-
-                String res = Utility.fetchResponseHttps(conn);
-                JSONObject result = new JSONObject(res);
-                if (!result.getBoolean("error")) {
-                    name = result.getString("name");
-                    usn = result.getString("usn");
-                    dept = result.getString("dept_id");
-                    quota = result.getString("quota");
-                    email = result.getString("email");
-                    join = result.getInt("joining_year");
-                    grad = result.getInt("graduation_year");
-                    email = result.getString("email");
-                    phone = result.getLong("phone");
-                    int year = Calendar.getInstance().get(Calendar.YEAR) - join + 1;
-                    if (Calendar.getInstance().get(Calendar.MONTH) <= 6) {
-                        semester = year * 2 - 1;
-                    } else
-                        semester = year * 2;
+                if (conn.getResponseCode() == 403) {
+                    sessionInvalidated = true;
+                    return null;
                 }
+                String res = Utility.fetchResponseHttps(conn);
+                JSONObject result = new JSONObject(res);
+                errorOccurred = result.getBoolean("error");
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -228,34 +176,51 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    void gotoLoginActivity(){
+        Toast.makeText(getActivity(), "Session Invalidated, logging out.", Toast.LENGTH_SHORT).show();
+        startActivity(new Intent(getActivity(), ProctorLoginActivity.class));
+    }
 
     public class FetchStudents extends AsyncTask<String, Void, Void> {
+        String token;
+        Boolean sessionInvalidated;
+
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            token = preferences.getString("JWT_TOKEN", "");
+            sessionInvalidated = false;
             progressBar.setVisibility(View.VISIBLE);
-
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+            if (sessionInvalidated) {
+                Toast.makeText(getContext(), "Session Invalidated, logging out.", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(getActivity(), ProctorLoginActivity.class));
+                return;
+            }
+
             adapter.notifyDataSetChanged();
             progressBar.setVisibility(View.INVISIBLE);
-
         }
 
         @Override
         protected Void doInBackground(String... strings) {
 
             String proctor_id = strings[0];
-
             try {
                 URL url = new URL(String.format("https://proctorial-system.herokuapp.com/app/get_students?faculty_id=%s", proctor_id));
                 HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
-
+                conn.setRequestProperty("Authorization", token);
                 conn.connect();
+                if (conn.getResponseCode() == 403) {
+                    sessionInvalidated = true;
+                    return null;
+                }
                 String result = Utility.fetchResponseHttps(conn);
                 JSONArray res_students = new JSONArray(result);
                 ArrayList<Student> temp = new ArrayList<>();

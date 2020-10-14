@@ -21,23 +21,24 @@ public class ShowRemarkList extends AppCompatActivity {
 
     ArrayList<ReportEntry> reportEntries = new ArrayList<>();
     RemarkListAdapter adapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_show_remark_list);
         ListView remarkList = findViewById(R.id.remark_list);
 
-        reportEntries=(ArrayList<ReportEntry>)getIntent().getSerializableExtra("reports");
+        reportEntries = (ArrayList<ReportEntry>) getIntent().getSerializableExtra("reports");
         adapter = new RemarkListAdapter(this, R.layout.show_remark_list_item, R.id.row_id_tv1, reportEntries);
         remarkList.setAdapter(adapter);
         adapter.notifyDataSetChanged();
     }
 
-    public class RemarkListAdapter extends ArrayAdapter<ReportEntry> {
+    private static class RemarkListAdapter extends ArrayAdapter<ReportEntry> {
         Context context;
         ArrayList<ReportEntry> re;
 
-        public RemarkListAdapter(@NonNull Context context, int resource, int textViewResourceId, @NonNull ArrayList<ReportEntry> objects) {
+        RemarkListAdapter(@NonNull Context context, int resource, int textViewResourceId, @NonNull ArrayList<ReportEntry> objects) {
             super(context, resource, textViewResourceId, objects);
             this.context = context;
             re = objects;
@@ -51,14 +52,12 @@ public class ShowRemarkList extends AppCompatActivity {
             TextView usntv = convertView.findViewById(R.id.usn);
             TextView remarktv = convertView.findViewById(R.id.remark);
             usntv.setText(re.get(position).getStudentUsn());
-            if(re.get(position).getRemarkMessage().equals(""))
-            remarktv.setText("No remarks");
+            if (re.get(position).getRemarkMessage().equals(""))
+                remarktv.setText("No remarks");
             else
                 remarktv.setText(re.get(position).getRemarkMessage());
             return super.getView(position, convertView, parent);
         }
-
-
     }
 
     @Override

@@ -42,8 +42,8 @@ public class ReportListAdapter extends ArrayAdapter<Report> {
 
     }
 
+    // To represent date in words, example: 3/6/19 as 3rd June, 2019
     private String dateToString(Date date) {
-        // Choose time zone in which you want to interpret your Date
         Calendar cal = Calendar.getInstance(TimeZone.getDefault());
         cal.setTime(date);
         int year = cal.get(Calendar.YEAR);
@@ -52,18 +52,12 @@ public class ReportListAdapter extends ArrayAdapter<Report> {
         if (day % 10 == 1) {
             return String.format(Locale.getDefault(), "%dst %s, %d", day, month, year);
         }
-
         if (day % 10 == 2) {
             return String.format(Locale.getDefault(), "%dnd %s, %d", day, month, year);
         }
-
         if (day % 10 == 3) {
             return String.format(Locale.getDefault(), "%drd %s, %d", day, month, year);
         }
-
-
         return String.format(Locale.getDefault(), "%dth %s, %d", day, month, year);
-
-
     }
 }

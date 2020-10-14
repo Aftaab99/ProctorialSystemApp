@@ -19,6 +19,7 @@ import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,9 +28,15 @@ import javax.net.ssl.HttpsURLConnection;
 import static java.lang.System.out;
 
 public class Utility {
+    private static final int SESSION_TOKEN_LENGTH=32;
 
+    public static String generateRandomSessionToken(){
+        byte[] randomASCII = new byte[SESSION_TOKEN_LENGTH];
+        new Random().nextBytes(randomASCII);
+        return new String(randomASCII, StandardCharsets.US_ASCII);
+    }
 
-    public static final String md5(final String s) {
+    public static String md5(final String s) {
         final String MD5 = "MD5";
         try {
             // Create MD5 Hash
@@ -76,7 +83,6 @@ public class Utility {
 
     public static void setPostRequestContent(HttpsURLConnection conn,
                                              JSONObject jsonObject) throws IOException {
-
         OutputStream os = conn.getOutputStream();
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
         writer.write(jsonObject.toString());
@@ -108,31 +114,6 @@ public class Utility {
         return "";
     }
 
-    public static String fetchResponseHttp(HttpURLConnection connection) {
-
-        try {
-            connection.setConnectTimeout(60000);
-            connection.connect();
-            InputStream in = new BufferedInputStream(connection.getInputStream());
-            BufferedReader read = new BufferedReader(new InputStreamReader(in));
-
-            StringBuffer res = new StringBuffer();
-            String line;
-
-            while ((line = read.readLine()) != null) {
-                res.append(line);
-            }
-            out.println("RESPONSE:\n" + res);
-            return res.toString();
-        } catch (Exception e) {
-            out.println("Failed..");
-            e.printStackTrace();
-        }
-
-        return "";
-    }
-
-
     public static boolean isOnline() {
         try {
             int timeoutMs = 1500;
@@ -147,7 +128,4 @@ public class Utility {
             return false;
         }
     }
-
-
-
 }

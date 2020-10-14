@@ -1,17 +1,18 @@
 package com.example.proctorialsystem.components;
 
+
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentStatePagerAdapter;
+import androidx.fragment.app.FragmentPagerAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainFragmentAdapter extends FragmentStatePagerAdapter {
+public class MainFragmentAdapter extends FragmentPagerAdapter {
 
     private final List<Fragment> mFragmentList = new ArrayList<>();
     public MainFragmentAdapter(FragmentManager fm) {
-        super(fm);
+        super(fm, FragmentPagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
     }
 
     @Override

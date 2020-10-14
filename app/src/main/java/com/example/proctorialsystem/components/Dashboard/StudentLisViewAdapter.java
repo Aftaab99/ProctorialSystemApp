@@ -1,19 +1,25 @@
 package com.example.proctorialsystem.components.Dashboard;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 import com.example.proctorialsystem.R;
 import com.example.proctorialsystem.Utility;
+import com.example.proctorialsystem.login.ProctorLoginActivity;
 
 import org.json.JSONObject;
 
@@ -24,14 +30,15 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class StudentLisViewAdapter extends ArrayAdapter {
 
-    Context mContext;
-    List<Student> students;
+    private Context mContext;
+    private List<Student> students;
+    private DashboardFragment fragmentRef;
 
-
-    public StudentLisViewAdapter(@NonNull Context context, int resource, int textViewResourceId, @NonNull List<Student> students) {
+    StudentLisViewAdapter(@NonNull Context context, int resource, int textViewResourceId, @NonNull List<Student> students, @NonNull DashboardFragment fragmentRef) {
         super(context, resource, textViewResourceId, students);
         this.mContext = context;
         this.students = students;
+        this.fragmentRef = fragmentRef;
     }
 
     @NonNull
@@ -65,21 +72,27 @@ public class StudentLisViewAdapter extends ArrayAdapter {
 
     public class RemoveStudent extends AsyncTask<String, Void, Void> {
 
-        @NonNull
-        Boolean removeSuccessful;
+        Boolean removeSuccessful, sessionInvalidated;
         int position;
         Student student;
+        String token;
 
         @Override
         protected void onPreExecute() {
-
             removeSuccessful = false;
-
+            sessionInvalidated = false;
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+            token = preferences.getString("JWT_TOKEN", "");
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+            if(sessionInvalidated){
+                Toast.makeText(getContext(), "Session Invalidated, logging out.", Toast.LENGTH_SHORT).show();
+                fragmentRef.gotoLoginActivity();
+                return;
+            }
             if (removeSuccessful) {
                 if (student != null)
                     students.remove(student);
@@ -93,17 +106,20 @@ public class StudentLisViewAdapter extends ArrayAdapter {
             String usn = strings[0];
             position = Integer.parseInt(strings[1]);
             student = students.get(position);
-            System.out.println("Removing="+student.getName());
             try {
                 URL url = new URL(String.format("https://proctorial-system.herokuapp.com/app/remove_student_proctor?student_usn=%s", usn));
                 HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
                 connection.setRequestMethod("GET");
+                connection.setRequestProperty("Authorization", token);
                 connection.connect();
+                if(connection.getResponseCode()==403)
+                {
+                    sessionInvalidated = true;
+                }
                 String result = Utility.fetchResponseHttps(connection);
                 JSONObject res = new JSONObject(result);
                 if (!res.getBoolean("error"))
                     removeSuccessful = true;
-
 
             } catch (Exception e) {
                 e.printStackTrace();

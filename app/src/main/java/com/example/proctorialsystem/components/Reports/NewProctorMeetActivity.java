@@ -1,8 +1,10 @@
 package com.example.proctorialsystem.components.Reports;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.proctorialsystem.R;
 import com.example.proctorialsystem.Utility;
+import com.example.proctorialsystem.login.ProctorLoginActivity;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -29,6 +32,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -70,7 +74,7 @@ public class NewProctorMeetActivity extends AppCompatActivity {
                 ReportEntry[] res = new ReportEntry[re.size()];
                 for (int i = 0; i < re.size(); i++) {
                     res[i] = re.get(i);
-                    System.out.println("\nDATA:"+res[i]);
+                    System.out.println("\nDATA:" + res[i]);
                 }
 
                 SendReportData srd = new SendReportData();
@@ -82,19 +86,28 @@ public class NewProctorMeetActivity extends AppCompatActivity {
 
 
     public class SendReportData extends AsyncTask<ReportEntry, Void, Void> {
-        Boolean errorOccured;
+        Boolean errorOccurred, sessionInvalidated;
+        String token;
+
+
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            errorOccured=true;
-            String pattern = "dd/MM/yyyy";
-            date =new SimpleDateFormat(pattern).format(new Date());
+            errorOccurred = false;
+            sessionInvalidated = false;
+            token = PreferenceManager.getDefaultSharedPreferences(NewProctorMeetActivity.this).getString("JWT_TOKEN", "");
+            date = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
-            if(!errorOccured){
+            if(sessionInvalidated){
+                Toast.makeText(NewProctorMeetActivity.this, "Session Invalidated, logging out.", Toast.LENGTH_SHORT).show();
+                finish();
+                startActivity(new Intent(NewProctorMeetActivity.this, ProctorLoginActivity.class));
+            }
+            if (!errorOccurred) {
                 Toast.makeText(NewProctorMeetActivity.this, "Report saved", Toast.LENGTH_LONG).show();
                 finish();
             }
@@ -104,13 +117,14 @@ public class NewProctorMeetActivity extends AppCompatActivity {
         protected Void doInBackground(ReportEntry... reportEntries) {
 
             try {
-                URL url=new URL("https://proctorial-system.herokuapp.com/app/store_proctor_details");
-                HttpsURLConnection conn = (HttpsURLConnection)url.openConnection();
+                URL url = new URL("https://proctorial-system.herokuapp.com/app/store_proctor_details");
+                HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
-                JSONObject reqParent =new JSONObject();
+                conn.setRequestProperty("Authorization", token);
+                JSONObject reqParent = new JSONObject();
                 JSONArray reqObj = new JSONArray();
-                for(int i=0;i<reportEntries.length;i++){
-                    JSONObject sub=new JSONObject();
+                for (int i = 0; i < reportEntries.length; i++) {
+                    JSONObject sub = new JSONObject();
                     sub.put("usn", reportEntries[i].getStudentUsn());
                     sub.put("remark", reportEntries[i].getRemarkMessage());
                     reqObj.put(i, sub);
@@ -120,19 +134,22 @@ public class NewProctorMeetActivity extends AppCompatActivity {
                 reqParent.put("meet_date", date);
                 conn.setDoInput(true);
                 conn.setDoOutput(true);
-                conn.setUseCaches (false);
+                conn.setUseCaches(false);
 
-                conn.setRequestProperty("Content-Type","application/json");
-                DataOutputStream printout = new DataOutputStream(conn.getOutputStream ());
+                conn.setRequestProperty("Content-Type", "application/json");
+                DataOutputStream printout = new DataOutputStream(conn.getOutputStream());
                 printout.writeBytes(reqParent.toString());
-                printout.flush ();
-                printout.close ();
+                printout.flush();
+                printout.close();
                 conn.connect();
-
+                if (conn.getResponseCode() == 403) {
+                    sessionInvalidated = true;
+                    return null;
+                }
                 String res = Utility.fetchResponseHttps(conn);
                 JSONObject result = new JSONObject(res);
-                if(!result.getBoolean("error")){
-                    errorOccured=false;
+                if (result.getBoolean("error")) {
+                    errorOccurred = true;
                 }
 
             } catch (Exception e) {
@@ -142,12 +159,12 @@ public class NewProctorMeetActivity extends AppCompatActivity {
         }
     }
 
-    public class RemarkListAdapter extends ArrayAdapter<String> {
+    private static class RemarkListAdapter extends ArrayAdapter<String> {
 
         Context mContext;
         String[] usn_list;
 
-        public RemarkListAdapter(@NonNull Context context, int resource, int textViewResourceId, @NonNull String[] objects) {
+        RemarkListAdapter(@NonNull Context context, int resource, int textViewResourceId, @NonNull String[] objects) {
             super(context, resource, textViewResourceId, objects);
             mContext = context;
             usn_list = objects;
@@ -171,8 +188,6 @@ public class NewProctorMeetActivity extends AppCompatActivity {
             return super.getView(position, convertView, parent);
         }
     }
-
-
 
 
 }

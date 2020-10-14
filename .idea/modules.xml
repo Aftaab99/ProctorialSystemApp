@@ -3,6 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/ProctorialSystem.iml" filepath="$PROJECT_DIR$/ProctorialSystem.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ProctorialSystemApp.iml" filepath="$PROJECT_DIR$/ProctorialSystemApp.iml" group="ProctorialSystemApp" />
+      <module fileurl="file://$PROJECT_DIR$/app/ProctorialSystemApp-app.iml" filepath="$PROJECT_DIR$/app/ProctorialSystemApp-app.iml" group="ProctorialSystemApp/app" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
